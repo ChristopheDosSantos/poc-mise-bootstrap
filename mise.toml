@@ -1,0 +1,12 @@
+[bootstrap.packages]
+"apt:git" = "latest"
+"apt:docker.io" = "latest"
+
+[tasks.bootstrap]
+description = "Ajoute DEV_USER au groupe docker"
+run = '''
+set -eu
+: "${DEV_USER:?Définir DEV_USER (ex. DEV_USER=alice)}"
+id "$DEV_USER" >/dev/null
+sudo usermod -aG docker "$DEV_USER"
+'''
