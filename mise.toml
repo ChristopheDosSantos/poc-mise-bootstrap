@@ -1,12 +1,13 @@
 [bootstrap.packages]
-"apt:git" = "latest"
 "apt:docker.io" = "latest"
 
+[vars.dev_user]
+required = "Renseigner dev_user (mise vars dev_user=alice)"
+prompt = "Utilisateur à ajouter au groupe docker"
+
 [tasks.bootstrap]
-description = "Ajoute DEV_USER au groupe docker"
 run = '''
 set -eu
-: "${DEV_USER:?Définir DEV_USER (ex. DEV_USER=alice)}"
-id "$DEV_USER" >/dev/null
-sudo usermod -aG docker "$DEV_USER"
+id {{ vars.dev_user | quote }} >/dev/null
+sudo usermod -aG docker {{ vars.dev_user | quote }}
 '''
