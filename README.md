@@ -21,6 +21,7 @@ Ce bootstrap installe automatiquement :
 - Go via `mise`
 - Node.js via `mise`
 - Yarn via Corepack
+- Python via `mise`
 - Typst via `mise`
 - Firefox en local dans le profil utilisateur
 - Chromium en local dans le profil utilisateur

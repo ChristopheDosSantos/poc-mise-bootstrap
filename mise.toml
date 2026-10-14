@@ -2,6 +2,7 @@
 rust = "stable"
 go = "1.23.2"
 node = "lts"
+python = "3.12"
 typst = "latest"
 
 [tasks.bootstrap]
@@ -139,6 +140,7 @@ rustc --version
 go version
 node --version
 yarn --version
+python --version
 firefox --version
 chromium --version
 typst --version
