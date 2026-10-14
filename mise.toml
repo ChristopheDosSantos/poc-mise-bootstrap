@@ -1,22 +1,92 @@
-[bootstrap.packages]
-"apt:podman" = "latest"
-"apt:podman-docker" = "latest"
-
-[vars.dev_user]
-required = "Renseigner dev_user (mise vars dev_user=alice)"
-prompt = "Utilisateur à configurer pour Podman en mode rootless"
-
 [tasks.bootstrap]
-run = '''
+run = """
 set -eu
-id {{ vars.dev_user | quote }} >/dev/null
 
-# Podman rootless : pas besoin de sudo ni du groupe docker.
-sudo usermod --add-subuids 100000-165535 {{ vars.dev_user | quote }}
-sudo usermod --add-subgids 100000-165535 {{ vars.dev_user | quote }}
-sudo loginctl enable-linger {{ vars.dev_user | quote }}
+# Installation de Starship sans sudo.
+if ! command -v starship >/dev/null 2>&1; then
+  curl -fsSL https://starship.rs/install.sh | sh -s -- -y
+fi
 
-sudo -u {{ vars.dev_user | quote }} mkdir -p /home/{{ vars.dev_user }}/.config/containers
-sudo -u {{ vars.dev_user | quote }} sh -c 'printf "%s\n" "[containers]" "log_driver = \"k8s-file\"" "[engine]" "cgroup_manager = \"cgroupfs\"" "events_logger = \"file\"" > /home/{{ vars.dev_user }}/.config/containers/containers.conf'
-sudo -u {{ vars.dev_user | quote }} sh -c 'grep -q "alias docker=podman" /home/{{ vars.dev_user }}/.bashrc || printf "%s\n" "alias docker=podman" >> /home/{{ vars.dev_user }}/.bashrc'
+# Installation locale de la police JetBrainsMono Nerd Font (sans sudo).
+font_dir="$HOME/.local/share/fonts"
+mkdir -p "$font_dir"
+
+if ! command -v fc-list >/dev/null 2>&1 || ! fc-list | grep -qi "JetBrainsMono Nerd Font"; then
+  tmp_dir="$(mktemp -d)"
+  trap 'rm -rf "$tmp_dir"' EXIT
+
+  curl -fsSL -o "$tmp_dir/JetBrainsMono.zip" \
+    https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip
+
+  unzip -q "$tmp_dir/JetBrainsMono.zip" -d "$font_dir"
+
+  if command -v fc-cache >/dev/null 2>&1; then
+    fc-cache -fv
+  fi
+fi
+
+# Activation de Starship pour Bash, sans duplication.
+[ -f "$HOME/.bashrc" ] || touch "$HOME/.bashrc"
+if ! grep -q 'starship init bash' "$HOME/.bashrc"; then
+  printf '\n# Starship prompt\n' >> "$HOME/.bashrc"
+  printf 'eval "$(starship init bash)"\n' >> "$HOME/.bashrc"
+fi
+
+# Configuration Starship personnalisée pour un prompt propre et lisible.
+mkdir -p "$HOME/.config"
+if [ ! -f "$HOME/.config/starship.toml" ]; then
+  cat > "$HOME/.config/starship.toml" <<'EOF2'
+add_newline = true
+
+format = '''
+[╭─](bold blue)$os$username$hostname$directory$git_branch$git_status$fill$time
+[╰─>](bold blue) $character
 '''
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[✖](bold red)"
+
+[os]
+style = "bold blue"
+format = "[$symbol](bold blue) "
+
+[os.symbols]
+Ubuntu = " "
+
+[username]
+show_always = true
+style_user = "bold green"
+style_root = "bold red"
+format = "[$user]($style)@"
+
+[hostname]
+ssh_only = false
+style = "bold yellow"
+format = "[$hostname]($style) "
+
+[directory]
+style = "bold cyan"
+truncation_length = 3
+truncate_to_repo = true
+
+[git_branch]
+style = "bold magenta"
+format = "[\\($branch\\)]($style) "
+
+[git_status]
+format = '([$all_status$ahead_behind]($style) )'
+style = "bold red"
+
+[fill]
+symbol = " "
+
+[time]
+disabled = false
+style = "bold white"
+format = "[$time]($style)"
+EOF2
+fi
+
+starship --version
+"""
