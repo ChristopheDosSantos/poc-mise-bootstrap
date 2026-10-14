@@ -25,11 +25,40 @@ if ! command -v fc-list >/dev/null 2>&1 || ! fc-list | grep -qi "JetBrainsMono N
   fi
 fi
 
+# Installation locale de JetBrains Toolbox (sans sudo).
+if ! command -v jetbrains-toolbox >/dev/null 2>&1; then
+  toolbox_version="3.8.1.88030"
+  toolbox_dir="$HOME/.local/share/JetBrains/Toolbox"
+  toolbox_bin="$toolbox_dir/bin/jetbrains-toolbox"
+
+  mkdir -p "$HOME/.local/bin" "$HOME/.local/share/JetBrains"
+
+  if [ ! -x "$toolbox_bin" ]; then
+    tmp_dir="$(mktemp -d)"
+    trap 'rm -rf "$tmp_dir"' EXIT
+
+    curl -fsSL -o "$tmp_dir/jetbrains-toolbox.tar.gz" \
+      "https://download.jetbrains.com/toolbox/jetbrains-toolbox-$toolbox_version.tar.gz"
+
+    rm -rf "$toolbox_dir"
+    mkdir -p "$toolbox_dir"
+    tar -xzf "$tmp_dir/jetbrains-toolbox.tar.gz" -C "$toolbox_dir" --strip-components=1
+  fi
+
+  if [ -x "$toolbox_bin" ]; then
+    ln -sf "$toolbox_bin" "$HOME/.local/bin/jetbrains-toolbox"
+  fi
+fi
+
 # Activation de Starship pour Bash, sans duplication.
 [ -f "$HOME/.bashrc" ] || touch "$HOME/.bashrc"
 if ! grep -q 'starship init bash' "$HOME/.bashrc"; then
   printf '\n# Starship prompt\n' >> "$HOME/.bashrc"
   printf 'eval "$(starship init bash)"\n' >> "$HOME/.bashrc"
+fi
+
+if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc"; then
+  printf '\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$HOME/.bashrc"
 fi
 
 # Configuration Starship personnalisée pour un prompt propre et lisible.
@@ -89,4 +118,5 @@ EOF2
 fi
 
 starship --version
+jetbrains-toolbox --version || true
 """
