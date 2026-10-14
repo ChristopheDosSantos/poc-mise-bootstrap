@@ -11,6 +11,11 @@ set -eu
 # Logiciels gérés par mise.
 mise install
 
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.cargo/bin:$PATH"
+export PATH="$HOME/.local/go/bin:$PATH"
+export PATH="$HOME/go/bin:$PATH"
+
 # Node/Yarn via Corepack (sans sudo, compatible avec la gestion de versions de mise).
 if command -v node >/dev/null 2>&1; then
   corepack enable >/dev/null 2>&1 || true
@@ -21,6 +26,53 @@ fi
 [ -f "$HOME/.bashrc" ] || touch "$HOME/.bashrc"
 if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc"; then
   printf '%s\n' 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+fi
+
+# Firefox et Chromium installés localement, sans sudo.
+if ! command -v firefox >/dev/null 2>&1 && [ ! -x "$HOME/.local/firefox/firefox" ]; then
+  tmp_dir="$(mktemp -d)"
+  trap 'rm -rf "$tmp_dir"' EXIT
+
+  curl -fsSL -o "$tmp_dir/firefox.tar.bz2" \
+    'https://download.mozilla.org/?product=firefox-latest-ssl&os=linux64&lang=en-US'
+
+  rm -rf "$HOME/.local/firefox"
+  tar -xjf "$tmp_dir/firefox.tar.bz2" -C "$HOME/.local"
+
+  if [ -x "$HOME/.local/firefox/firefox" ]; then
+    ln -sf "$HOME/.local/firefox/firefox" "$HOME/.local/bin/firefox"
+  fi
+fi
+
+if ! command -v chromium >/dev/null 2>&1 && [ ! -x "$HOME/.local/chromium/usr/bin/chromium" ]; then
+  if command -v dpkg-deb >/dev/null 2>&1; then
+    tmp_dir="$(mktemp -d)"
+    trap 'rm -rf "$tmp_dir"' EXIT
+
+    chromium_url="$(python3 - <<'PY'
+import json, urllib.request
+url = 'https://api.github.com/repos/ungoogled-software/ungoogled-chromium-binaries/releases/latest'
+with urllib.request.urlopen(url, timeout=30) as r:
+    data = json.load(r)
+for asset in data.get('assets', []):
+    name = asset.get('name', '')
+    if name.startswith('chromium_') and name.endswith('_amd64.deb'):
+        print(asset['browser_download_url'])
+        break
+PY
+)"
+
+    if [ -n "$chromium_url" ]; then
+      curl -fsSL -o "$tmp_dir/chromium.deb" "$chromium_url"
+      rm -rf "$HOME/.local/chromium"
+      mkdir -p "$HOME/.local/chromium"
+      dpkg-deb -x "$tmp_dir/chromium.deb" "$HOME/.local/chromium"
+
+      if [ -x "$HOME/.local/chromium/usr/bin/chromium" ]; then
+        ln -sf "$HOME/.local/chromium/usr/bin/chromium" "$HOME/.local/bin/chromium"
+      fi
+    fi
+  fi
 fi
 
 # Starship.
@@ -87,5 +139,7 @@ rustc --version
 go version
 node --version
 yarn --version
+firefox --version
+chromium --version
 typst --version
 '''

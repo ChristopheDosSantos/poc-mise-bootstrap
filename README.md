@@ -22,6 +22,8 @@ Ce bootstrap installe automatiquement :
 - Node.js via `mise`
 - Yarn via Corepack
 - Typst via `mise`
+- Firefox en local dans le profil utilisateur
+- Chromium en local dans le profil utilisateur
 - Starship
 - JetBrains Mono Nerd Font
 - JetBrains Toolbox
