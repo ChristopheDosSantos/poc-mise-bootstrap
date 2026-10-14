@@ -1,13 +1,22 @@
 [bootstrap.packages]
-"apt:docker.io" = "latest"
+"apt:podman" = "latest"
+"apt:podman-docker" = "latest"
 
 [vars.dev_user]
 required = "Renseigner dev_user (mise vars dev_user=alice)"
-prompt = "Utilisateur à ajouter au groupe docker"
+prompt = "Utilisateur à configurer pour Podman en mode rootless"
 
 [tasks.bootstrap]
 run = '''
 set -eu
 id {{ vars.dev_user | quote }} >/dev/null
-sudo usermod -aG docker {{ vars.dev_user | quote }}
+
+# Podman rootless : pas besoin de sudo ni du groupe docker.
+sudo usermod --add-subuids 100000-165535 {{ vars.dev_user | quote }}
+sudo usermod --add-subgids 100000-165535 {{ vars.dev_user | quote }}
+sudo loginctl enable-linger {{ vars.dev_user | quote }}
+
+sudo -u {{ vars.dev_user | quote }} mkdir -p /home/{{ vars.dev_user }}/.config/containers
+sudo -u {{ vars.dev_user | quote }} sh -c 'printf "%s\n" "[containers]" "log_driver = \"k8s-file\"" "[engine]" "cgroup_manager = \"cgroupfs\"" "events_logger = \"file\"" > /home/{{ vars.dev_user }}/.config/containers/containers.conf'
+sudo -u {{ vars.dev_user | quote }} sh -c 'grep -q "alias docker=podman" /home/{{ vars.dev_user }}/.bashrc || printf "%s\n" "alias docker=podman" >> /home/{{ vars.dev_user }}/.bashrc'
 '''
