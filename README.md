@@ -1,20 +1,29 @@
 # poc-mise-bootstrap
-test de préparation de machine avec mise bootstrap
 
-Commande pour lancer le bootstrap :
+Bootstrap personnel sans sudo pour la branche `dev/cds`.
 
-```bash
-mise bootstrap --prompt-vars --from 'https://ChristopheDosSantos/poc-mise-bootstrap.git?ref=developpeur'
-```
+Ce dépôt installe les outils de développement dans le profil utilisateur (`$HOME`) pour éviter les droits administrateur et les dépendances au groupe `docker`.
 
-Si on relance la commande, ne pas oublier de faire ceci :
-
+Commandes pour lancer le bootstrap :
 
 ```bash
-mise bootstrap --update --prompt-vars --from 'https://ChristopheDosSantos/poc-mise-bootstrap.git?ref=developpeur'
+mise bootstrap --from 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git?ref=dev/cds'
 ```
 
-Comme les variables sont enregistrées dans le fichier `~/.mise/vars`, il est possible de ne pas utiliser l'option `--prompt-vars` si on veut relancer le bootstrap avec les mêmes valeurs.
-Mais si on veut changer une valeur, il faut supprimer la variable dans le fichier `~/.mise/vars` avant de relancer le bootstrap.
-On peut également effacer une variable avec la commande `mise vars unset dev_user`.
+Pour relancer et mettre à jour le bootstrap :
+
+```bash
+mise bootstrap --update --from 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git?ref=dev/cds'
+```
+
+Ce bootstrap installe automatiquement :
+- Rust via `mise`
+- Go via `mise`
+- Typst via `mise`
+- Starship
+- JetBrains Mono Nerd Font
+- JetBrains Toolbox
+- le fichier de configuration Starship depuis `config/starship.toml`
+
+Le fichier Starship est versionné dans le dépôt et copié vers `~/.config/starship.toml` au moment du bootstrap.
 

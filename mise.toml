@@ -1,17 +1,30 @@
+[tools]
+rust = "stable"
+go = "1.23.2"
+typst = "latest"
+
 [tasks.bootstrap]
-run = """
+run = '''
 set -eu
 
-# Installation de Starship sans sudo.
+# Logiciels gérés par mise.
+mise install
+
+# Chemins locaux utilisateur.
+[ -f "$HOME/.bashrc" ] || touch "$HOME/.bashrc"
+if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc"; then
+  printf '%s\n' 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+fi
+
+# Starship.
 if ! command -v starship >/dev/null 2>&1; then
   curl -fsSL https://starship.rs/install.sh | sh -s -- -y
 fi
 
-# Installation locale de la police JetBrainsMono Nerd Font (sans sudo).
+# Police JetBrains Mono Nerd Font.
 font_dir="$HOME/.local/share/fonts"
 mkdir -p "$font_dir"
-
-if ! command -v fc-list >/dev/null 2>&1 || ! fc-list | grep -qi "JetBrainsMono Nerd Font"; then
+if ! command -v fc-list >/dev/null 2>&1 || ! fc-list | grep -qi 'JetBrainsMono Nerd Font'; then
   tmp_dir="$(mktemp -d)"
   trap 'rm -rf "$tmp_dir"' EXIT
 
@@ -25,9 +38,9 @@ if ! command -v fc-list >/dev/null 2>&1 || ! fc-list | grep -qi "JetBrainsMono N
   fi
 fi
 
-# Installation locale de JetBrains Toolbox (sans sudo).
+# JetBrains Toolbox.
 if ! command -v jetbrains-toolbox >/dev/null 2>&1; then
-  toolbox_version="3.8.1.88030"
+  toolbox_version='3.8.1.88030'
   toolbox_dir="$HOME/.local/share/JetBrains/Toolbox"
   toolbox_bin="$toolbox_dir/bin/jetbrains-toolbox"
 
@@ -50,73 +63,20 @@ if ! command -v jetbrains-toolbox >/dev/null 2>&1; then
   fi
 fi
 
-# Activation de Starship pour Bash, sans duplication.
-[ -f "$HOME/.bashrc" ] || touch "$HOME/.bashrc"
+# Fichier de config Starship stocké dans le dépôt source.
+if [ -f "$PWD/config/starship.toml" ]; then
+  mkdir -p "$HOME/.config"
+  install -m 0644 "$PWD/config/starship.toml" "$HOME/.config/starship.toml"
+fi
+
+# Activation du prompt.
 if ! grep -q 'starship init bash' "$HOME/.bashrc"; then
-  printf '\n# Starship prompt\n' >> "$HOME/.bashrc"
-  printf 'eval "$(starship init bash)"\n' >> "$HOME/.bashrc"
-fi
-
-if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc"; then
-  printf '\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$HOME/.bashrc"
-fi
-
-# Configuration Starship personnalisée pour un prompt propre et lisible.
-mkdir -p "$HOME/.config"
-if [ ! -f "$HOME/.config/starship.toml" ]; then
-  cat > "$HOME/.config/starship.toml" <<'EOF2'
-add_newline = true
-
-format = '''
-[╭─](bold blue)$os$username$hostname$directory$git_branch$git_status$fill$time
-[╰─>](bold blue) $character
-'''
-
-[character]
-success_symbol = "[❯](bold green)"
-error_symbol = "[✖](bold red)"
-
-[os]
-style = "bold blue"
-format = "[$symbol](bold blue) "
-
-[os.symbols]
-Ubuntu = " "
-
-[username]
-show_always = true
-style_user = "bold green"
-style_root = "bold red"
-format = "[$user]($style)@"
-
-[hostname]
-ssh_only = false
-style = "bold yellow"
-format = "[$hostname]($style) "
-
-[directory]
-style = "bold cyan"
-truncation_length = 3
-truncate_to_repo = true
-
-[git_branch]
-style = "bold magenta"
-format = "[\\($branch\\)]($style) "
-
-[git_status]
-format = '([$all_status$ahead_behind]($style) )'
-style = "bold red"
-
-[fill]
-symbol = " "
-
-[time]
-disabled = false
-style = "bold white"
-format = "[$time]($style)"
-EOF2
+  printf '%s\n' '# Starship prompt' >> "$HOME/.bashrc"
+  printf '%s\n' 'eval "$(starship init bash)"' >> "$HOME/.bashrc"
 fi
 
 starship --version
-jetbrains-toolbox --version || true
-"""
+rustc --version
+go version
+typst --version
+'''
