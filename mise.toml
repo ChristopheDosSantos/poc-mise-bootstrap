@@ -1,6 +1,7 @@
 [tools]
 rust = "stable"
 go = "1.23.2"
+node = "lts"
 typst = "latest"
 
 [tasks.bootstrap]
@@ -9,6 +10,12 @@ set -eu
 
 # Logiciels gérés par mise.
 mise install
+
+# Node/Yarn via Corepack (sans sudo, compatible avec la gestion de versions de mise).
+if command -v node >/dev/null 2>&1; then
+  corepack enable >/dev/null 2>&1 || true
+  corepack prepare yarn@stable --activate >/dev/null 2>&1 || true
+fi
 
 # Chemins locaux utilisateur.
 [ -f "$HOME/.bashrc" ] || touch "$HOME/.bashrc"
@@ -78,5 +85,7 @@ fi
 starship --version
 rustc --version
 go version
+node --version
+yarn --version
 typst --version
 '''

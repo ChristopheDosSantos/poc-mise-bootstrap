@@ -19,6 +19,8 @@ mise bootstrap --update --from 'https://github.com/ChristopheDosSantos/poc-mise-
 Ce bootstrap installe automatiquement :
 - Rust via `mise`
 - Go via `mise`
+- Node.js via `mise`
+- Yarn via Corepack
 - Typst via `mise`
 - Starship
 - JetBrains Mono Nerd Font
