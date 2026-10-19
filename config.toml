@@ -2,6 +2,3 @@
 node = "latest"
 java = "latest"
 yarn = "latest"
-
-[env]
-JAVA_TOOL_OPTIONS = "-Djavax.net.ssl.trustStore={{ env.HOME }}/.config/java/truststore.p12 -Djavax.net.ssl.trustStorePassword=changeit -Djavax.net.ssl.trustStoreType=PKCS12"
