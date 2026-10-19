@@ -1,0 +1,37 @@
+[tools]
+starship = "latest"
+
+[bootstrap.packages]
+"apt:fontconfig" = "latest"
+"apt:unzip" = "latest"
+
+[tasks."setup:font"]
+description = "FiraCode Nerd Font (utilisateur courant)"
+run = '''
+set -eu
+if fc-list | grep -qi 'FiraCode Nerd Font'; then
+  echo "FiraCode Nerd Font déjà installée"
+  exit 0
+fi
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+curl -fsSL -o "$tmp/FiraCode.zip" \
+  https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip
+
+dest="$HOME/.local/share/fonts/FiraCodeNerdFont"
+mkdir -p "$dest"
+unzip -oq "$tmp/FiraCode.zip" '*.ttf' -d "$dest"
+fc-cache -f
+'''
+
+[tasks."setup:shell"]
+description = "Activation de mise et de Starship dans .bashrc"
+run = '''
+set -eu
+touch "$HOME/.bashrc"
+grep -q 'mise activate' "$HOME/.bashrc" || \
+  echo 'eval "$(mise activate bash)"' >> "$HOME/.bashrc"
+grep -q 'starship init bash' "$HOME/.bashrc" || \
+  printf '%s\n' '# Starship prompt' 'eval "$(starship init bash)"' >> "$HOME/.bashrc"
+'''
