@@ -7,18 +7,3 @@ typst = "latest"
 starship = "latest"
 yarn = "latest"
 
-[tasks.bootstrap]
-description = "Configuration du shell (sans sudo)"
-run = '''
-set -eu
-mise install
-
-touch "$HOME/.bashrc"
-grep -q 'mise activate' "$HOME/.bashrc" || echo 'eval "$(mise activate bash)"' >> "$HOME/.bashrc"
-grep -q 'starship init' "$HOME/.bashrc" || echo 'eval "$(starship init bash)"' >> "$HOME/.bashrc"
-
-if [ -f config/starship.toml ]; then
-  mkdir -p "$HOME/.config"
-  cp config/starship.toml "$HOME/.config/starship.toml"
-fi
-'''
