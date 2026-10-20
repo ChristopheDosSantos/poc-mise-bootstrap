@@ -1,0 +1,21 @@
+[bootstrap.packages]
+"apt:podman" = "latest"
+"apt:podman-docker" = "latest"
+
+[tasks."setup:podman"]
+run = '''
+u="$(id -un)"
+
+grep -q "^$u:" /etc/subuid || sudo usermod --add-subuids 100000-165535 "$u"
+grep -q "^$u:" /etc/subgid || sudo usermod --add-subgids 100000-165535 "$u"
+sudo loginctl enable-linger "$u"
+
+mkdir -p "$HOME/.config/containers"
+cat > "$HOME/.config/containers/containers.conf" <<'EOF'
+[containers]
+log_driver = "k8s-file"
+[engine]
+cgroup_manager = "cgroupfs"
+events_logger = "file"
+EOF
+'''
