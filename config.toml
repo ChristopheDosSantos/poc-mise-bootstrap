@@ -1,6 +1,7 @@
 [tools]
 node = "latest"
 java = "latest"
+python = "latest"
 yarn = "latest"
 jq = "latest"     # pour lire le JSON
 

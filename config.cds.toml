@@ -1,4 +1,6 @@
 [tools]
+rust = "latest"
+go = "latest"
 starship = "latest"
 "http:jetbrains-toolbox" = { version = "3.8.1.88030", url = "https://download.jetbrains.com/toolbox/jetbrains-toolbox-{{version}}.tar.gz", strip_components = 1, bin_path = "bin" }
 
@@ -54,7 +56,6 @@ set -eu
 flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
 for app in \
-  app.zen_browser.zen \
   org.mozilla.firefox \
   org.chromium.Chromium
 do
