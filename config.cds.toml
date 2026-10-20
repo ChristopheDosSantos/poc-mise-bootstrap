@@ -7,6 +7,8 @@ starship = "latest"
 "apt:unzip" = "latest"
 "apt:libfuse2t64" = "latest"
 "apt:flatpak" = "latest"
+"apt:libnss3-tools" = "latest"   # fournit certutil
+"apt:openssl" = "latest"
 
 [tasks."setup:font"]
 description = "FiraCode Nerd Font (utilisateur courant)"
@@ -58,5 +60,69 @@ for app in \
 do
   flatpak info --user "$app" >/dev/null 2>&1 || \
     flatpak install --user -y flathub "$app"
+done
+'''
+
+[tasks."setup:certs-local"]
+depends = ["setup:flatpak-apps"]
+description = "Certificats internes (PEM) dans ~/.local/share/dinum-certs"
+run = '''
+set -eu
+url="https://cert.gouv.nc/certs.json"
+dest="$HOME/.local/share/dinum-certs"
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+curl -fsSL "$url" -o "$tmp/certs.json"
+base="$(jq -r '.base_url' "$tmp/certs.json")"
+
+for f in $(jq -r '.files[]' "$tmp/certs.json"); do
+  curl -fsSL "${base%/}/$f" -o "$tmp/$f.raw"
+  if openssl x509 -in "$tmp/$f.raw" -noout 2>/dev/null; then
+    cp "$tmp/$f.raw" "$tmp/${f%.*}.crt"
+  else
+    openssl x509 -inform DER -in "$tmp/$f.raw" -out "$tmp/${f%.*}.crt"
+  fi
+done
+ls "$tmp"/*.crt >/dev/null
+
+rm -rf "$dest"
+mkdir -p "$dest"
+cp "$tmp"/*.crt "$dest"/
+'''
+
+[tasks."setup:certs-firefox"]
+description = "Firefox (Flatpak) : installe les certificats internes par politique"
+depends = ["setup:certs-local"]
+run = '''
+set -eu
+certs="$HOME/.local/share/dinum-certs"
+arch="$(flatpak --default-arch)"
+dir="$HOME/.local/share/flatpak/extension/org.mozilla.firefox.systemconfig/$arch/stable/policies"
+
+mkdir -p "$dir"
+jq -n '{policies: {Certificates: {Install: $ARGS.positional}}}' \
+  --args "$certs"/*.crt > "$dir/policies.json"
+
+# le bac à sable doit pouvoir lire les fichiers référencés par la politique
+flatpak override --user --filesystem="$certs:ro" org.mozilla.firefox
+'''
+
+[tasks."setup:certs-chromium"]
+description = "Chromium (Flatpak) : importe les certificats internes dans la base NSS"
+depends = ["setup:certs-local"]
+run = '''
+set -eu
+certs="$HOME/.local/share/dinum-certs"
+db="$HOME/.var/app/org.chromium.Chromium/.pki/nssdb"
+
+mkdir -p "$db"
+[ -f "$db/cert9.db" ] || certutil -d "sql:$db" -N --empty-password
+
+for c in "$certs"/*.crt; do
+  n="$(basename "${c%.crt}")"
+  certutil -d "sql:$db" -D -n "$n" 2>/dev/null || true
+  certutil -d "sql:$db" -A -t "C,," -n "$n" -i "$c"
 done
 '''

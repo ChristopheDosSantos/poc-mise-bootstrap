@@ -1,0 +1,36 @@
+[bootstrap.packages]
+"apt:ca-certificates" = "latest"   # fournit update-ca-certificates
+"apt:openssl" = "latest"
+
+[tasks."setup:certs-systeme"]
+description = "Installe les certificats internes dans le magasin système (sudo)"
+run = '''
+set -eu
+
+url="https://cert.gouv.nc/certs.json"
+dest="/usr/local/share/ca-certificates/dinum"
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+curl -fsSL "$url" -o "$tmp/certs.json"
+base="$(jq -r '.base_url' "$tmp/certs.json")"
+
+for f in $(jq -r '.files[]' "$tmp/certs.json"); do
+  curl -fsSL "${base%/}/$f" -o "$tmp/$f.raw"
+  # update-ca-certificates exige du PEM avec l'extension .crt
+  if openssl x509 -in "$tmp/$f.raw" -noout 2>/dev/null; then
+    cp "$tmp/$f.raw" "$tmp/${f%.*}.crt"
+  else
+    openssl x509 -inform DER -in "$tmp/$f.raw" -out "$tmp/${f%.*}.crt"
+  fi
+done
+
+# Ne rien toucher au système si rien n'a été téléchargé/converti
+ls "$tmp"/*.crt >/dev/null
+
+sudo rm -rf "$dest"
+sudo mkdir -p "$dest"
+sudo install -m 0644 "$tmp"/*.crt "$dest"/
+sudo update-ca-certificates
+'''
