@@ -6,6 +6,7 @@ starship = "latest"
 "apt:fontconfig" = "latest"
 "apt:unzip" = "latest"
 "apt:libfuse2t64" = "latest"
+"apt:flatpak" = "latest"
 
 [tasks."setup:font"]
 description = "FiraCode Nerd Font (utilisateur courant)"
@@ -42,4 +43,20 @@ grep -q 'MISE_ENV=docker,cds' "$HOME/.bashrc" || \
 
 grep -q 'starship init bash' "$HOME/.bashrc" || \
   printf '%s\n' '# Starship prompt' 'eval "$(starship init bash)"' >> "$HOME/.bashrc"
+'''
+
+[tasks."setup:flatpak-apps"]
+description = "Navigateurs Flatpak (utilisateur)"
+run = '''
+set -eu
+flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+for app in \
+  app.zen_browser.zen \
+  org.mozilla.firefox \
+  org.chromium.Chromium
+do
+  flatpak info --user "$app" >/dev/null 2>&1 || \
+    flatpak install --user -y flathub "$app"
+done
 '''
