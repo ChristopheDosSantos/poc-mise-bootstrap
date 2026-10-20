@@ -38,7 +38,7 @@ grep -q 'mise activate' "$HOME/.bashrc" || \
 
 # MISE_ENV doit être défini AVANT la ligne mise activate
 grep -q 'MISE_ENV=docker,cds' "$HOME/.bashrc" || \
-  sed -i '/mise activate/i export MISE_ENV=cds' "$HOME/.bashrc"
+  sed -i '/mise activate/i export MISE_ENV=docker,cds' "$HOME/.bashrc"
 
 grep -q 'starship init bash' "$HOME/.bashrc" || \
   printf '%s\n' '# Starship prompt' 'eval "$(starship init bash)"' >> "$HOME/.bashrc"
