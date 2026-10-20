@@ -2,7 +2,49 @@
 node = "latest"
 java = "latest"
 yarn = "latest"
+jq = "latest"     # pour lire le JSON
+
+[env]
+JAVA_TOOL_OPTIONS = "-Djavax.net.ssl.trustStore={{ env.HOME }}/.config/java/truststore.p12 -Djavax.net.ssl.trustStorePassword=changeit -Djavax.net.ssl.trustStoreType=PKCS12"
 
 [tasks.bootstrap]
 description = "Point d'entrée : lance toutes les tâches setup:*"
 depends = ["setup:*"]
+
+[tasks."setup:truststore"]
+description = "Reconstruit le truststore Java (cacerts du JDK + certificats internes)"
+run = '''
+set -eu
+# Les variables d'env de mise s'appliquent aussi aux tâches : keytool ne doit pas lire un truststore à moitié construit
+unset JAVA_TOOL_OPTIONS
+
+url="https://cert.gouv.nc/certs.json"
+dest="$HOME/.config/java/truststore.p12"
+pass="changeit"
+
+java_home="${JAVA_HOME:-$(dirname "$(dirname "$(readlink -f "$(command -v keytool)")")")}"
+cacerts="$java_home/lib/security/cacerts"
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+curl -fsSL "$url" -o "$tmp/certs.json"
+base="$(jq -r '.base_url' "$tmp/certs.json")"
+
+# Base : certificats publics du JDK
+keytool -importkeystore -noprompt \
+  -srckeystore "$cacerts" -srcstorepass changeit \
+  -destkeystore "$tmp/truststore.p12" -deststoretype PKCS12 -deststorepass "$pass" >/dev/null
+
+# Certificats internes
+for f in $(jq -r '.files[]' "$tmp/certs.json"); do
+  curl -fsSL "${base%/}/$f" -o "$tmp/$f"
+  keytool -importcert -noprompt -trustcacerts \
+    -alias "${f%.*}" -file "$tmp/$f" \
+    -keystore "$tmp/truststore.p12" -storetype PKCS12 -storepass "$pass" >/dev/null
+done
+
+mkdir -p "$(dirname "$dest")"
+mv "$tmp/truststore.p12" "$dest"
+echo "Truststore généré : $dest"
+'''
