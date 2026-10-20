@@ -1,6 +1,6 @@
 [tools]
 starship = "latest"
-"http:jetbrains-toolbox" = { version = "3.8.1.88030", url = "https://download.jetbrains.com/toolbox/jetbrains-toolbox-{{version}}.tar.gz", strip_components = 1, bin_path = "bin" }
+"http:jetbrains-toolbox" = {{ version = "3.8.1.88030", url = "https://download.jetbrains.com/toolbox/jetbrains-toolbox-{{version}}.tar.gz", strip_components = 1, bin_path = "bin" }}
 
 [bootstrap.packages]
 "apt:fontconfig" = "latest"
