@@ -5,6 +5,11 @@ python = "latest"
 yarn = "latest"
 jq = "latest"     # pour lire le JSON
 
+
+[bootstrap.packages]
+"apt:podman" = "latest"
+"apt:podman-docker" = "latest"
+
 [env]
 JAVA_TOOL_OPTIONS = "-Djavax.net.ssl.trustStore={{ env.HOME }}/.config/java/truststore.p12 -Djavax.net.ssl.trustStorePassword=changeit -Djavax.net.ssl.trustStoreType=PKCS12"
 
@@ -48,4 +53,22 @@ done
 mkdir -p "$(dirname "$dest")"
 mv "$tmp/truststore.p12" "$dest"
 echo "Truststore généré : $dest"
+'''
+
+[tasks."setup:podman"]
+run = '''
+u="$(id -un)"
+
+grep -q "^$u:" /etc/subuid || sudo usermod --add-subuids 100000-165535 "$u"
+grep -q "^$u:" /etc/subgid || sudo usermod --add-subgids 100000-165535 "$u"
+sudo loginctl enable-linger "$u"
+
+mkdir -p "$HOME/.config/containers"
+cat > "$HOME/.config/containers/containers.conf" <<'EOF'
+[containers]
+log_driver = "k8s-file"
+[engine]
+cgroup_manager = "cgroupfs"
+events_logger = "file"
+EOF
 '''

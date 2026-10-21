@@ -51,18 +51,33 @@ grep -q 'starship init bash' "$HOME/.bashrc" || \
 '''
 
 [tasks."setup:flatpak-apps"]
-description = "Navigateurs Flatpak (utilisateur)"
+description = "Applications Flatpak (utilisateur)"
 run = '''
 set -eu
 flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
 for app in \
   org.mozilla.firefox \
-  org.chromium.Chromium
+  org.chromium.Chromium \
+  com.vscodium.codium
 do
   flatpak info --user "$app" >/dev/null 2>&1 || \
     flatpak install --user -y flathub "$app"
 done
+'''
+
+[tasks."setup:codium-typst"]
+description = "Extension Tinymist (Typst) pour VSCodium"
+depends = ["setup:flatpak-apps"]
+run = '''
+set -eu
+ext="myriad-dreamin.tinymist"
+
+if flatpak run com.vscodium.codium --list-extensions | grep -qix "$ext"; then
+  echo "Extension $ext déjà installée"
+else
+  flatpak run com.vscodium.codium --install-extension "$ext"
+fi
 '''
 
 [tasks."setup:certs-local"]

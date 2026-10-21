@@ -7,22 +7,20 @@ L'idée n'est plus de brancher un seul bootstrap “universel”, mais de regrou
 Exemple de lancement :
 
 ```bash
-mise -E docker,cert,cds bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+mise -E cds bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
 ```
 
-Cela charge les profils `docker`, `cert` et `cds` et exécute la tâche `bootstrap` de chacun d'eux.
+Cela charge le profil par défaut et le profil `cds` et exécute la tâche `bootstrap` de chacun d'eux.
 
 Principe
 - `config.toml` : profil de base, commun à tous.
-- `config.cert.toml` : profil de certificats internes / truststore.
+- `config.cert.toml` : profil de certificats internes / truststore (celui là n'est normalement pas utilisé, cela devrait être géré par l'image fournie).
 - `config.cds.toml` : profil de poste de travail (shell, fonts, Flatpak, certificats utilisateur).
-- `mise.docker.toml` : profil Docker / Podman.
-- `-E docker,cert,cds` signifie “activer les environnements nommés docker, cert et cds”.
+- `-E cds` signifie “active l'environnement nommé cds, on pourrait appeler aussi cert ainsi `-E cert,cds`”.
 
-La commande n'est pas “un seul fichier par branche”, mais “un dépôt avec plusieurs fichiers de profils” ; on sélectionne les profils voulus au moment où on lance `mise`.
-
+L
 Pourquoi un admin est nécessaire pour certains profils
-- Les profils `docker` et `cert` contiennent des tâches qui utilisent `sudo` : installation de paquets système, modification du truststore système, configuration de Podman / subuid / subgid, etc.
+- Les profils par défaut et `cert` contiennent des tâches qui utilisent `sudo` : installation de paquets système, modification du truststore système, configuration de Podman / subuid / subgid, etc.
 - C'est normal et volontaire : certaines étapes nécessitent des droits système sur la machine.
 - Les autres profils restent orientés utilisateur (`$HOME`, `~/.local`, `~/.config`, Flatpak --user, etc.).
 
@@ -50,18 +48,12 @@ Les profils disponibles
    - télécharge les certificats internes dans `~/.local/share/dinum-certs`
    - configure le trust pour Firefox et Chromium au niveau utilisateur
 
-4. Profil Docker (`mise.docker.toml`)
-   - installe Podman / podman-docker
-   - configure les subuid / subgid
-   - configure `loginctl enable-linger` pour le compte utilisateur
-   - génère le `containers.conf` local
-
 Commandes courantes
 
 Installer tous les profils utiles :
 
 ```bash
-mise -E docker,cert,cds bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+mise -E cert,cds bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
 ```
 
 Installer seulement le profil CDS :
