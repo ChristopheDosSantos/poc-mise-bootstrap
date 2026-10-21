@@ -12,6 +12,13 @@ jq = "latest"     # pour lire le JSON
 
 [env]
 JAVA_TOOL_OPTIONS = "-Djavax.net.ssl.trustStore={{ env.HOME }}/.config/java/truststore.p12 -Djavax.net.ssl.trustStorePassword=changeit -Djavax.net.ssl.trustStoreType=PKCS12"
+# Node et npm/yarn : ajoute le bundle système aux racines intégrées à Node
+NODE_EXTRA_CA_CERTS = "/etc/ssl/certs/ca-certificates.crt"
+# Python (modules ssl, urllib...) et beaucoup d'autres outils
+SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt"
+# requests et pip embarquent leur propre bundle de certificats : il faut les rediriger
+REQUESTS_CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt"
+PIP_CERT = "/etc/ssl/certs/ca-certificates.crt"
 
 [tasks.bootstrap]
 description = "Point d'entrée : lance toutes les tâches setup:*"
