@@ -1,7 +1,9 @@
+[tools]
+"http:vagrant" = { version = "2.4.9", url = "https://releases.hashicorp.com/vagrant/{{version}}/vagrant_{{version}}_linux_amd64.zip" }
+
 [bootstrap.packages]
 "apt:virtualbox" = "latest"
 "apt:virtualbox-ext-pack" = "latest"
-"apt:vagrant" = "latest"
 "apt:dkms" = "latest"
 
 [tasks."setup:virtualbox-user"]
