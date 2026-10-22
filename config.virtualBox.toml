@@ -3,8 +3,7 @@
 
 [bootstrap.packages]
 "apt:virtualbox" = "latest"
-"apt:virtualbox-ext-pack" = "latest"
-"apt:dkms" = "latest"
+"apt:linux-headers-generic" = "latest"
 
 [tasks."setup:virtualbox-user"]
 description = "Ajoute l'utilisateur courant au groupe vboxusers"
