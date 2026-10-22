@@ -7,27 +7,47 @@ L'idée n'est plus de brancher un seul bootstrap “universel”, mais de regrou
 Exemple de lancement :
 
 ```bash
-mise -E cds bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+mise -E cds,virtualBox bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
 ```
 
-Cela charge le profil par défaut et le profil `cds` et exécute la tâche `bootstrap` de chacun d'eux.
+Cela charge le profil de base, le profil `cds`, le profil `virtualBox` et exécute la tâche `bootstrap` de chacun d'eux.
 
 Principe
 - `config.toml` : profil de base, commun à tous.
-- `config.cert.toml` : profil de certificats internes / truststore (celui là n'est normalement pas utilisé, cela devrait être géré par l'image fournie).
+- `config.cert.toml` : profil réservé aux environnements virtualisés (VMs / images de travail guest). Il ne doit pas être installé sur une machine physique de travail.
 - `config.cds.toml` : profil de poste de travail (shell, fonts, Flatpak, certificats utilisateur).
-- `-E cds` signifie “active l'environnement nommé cds, on pourrait appeler aussi cert ainsi `-E cert,cds`”.
+- `config.virtualBox.toml` : profil d'installation de VirtualBox et Vagrant sur le poste physique qui doit exécuter des machines virtuelles.
+- `-E cds,virtualBox` signifie “active les profils `cds` et `virtualBox`”.
 
-L
+Le profil Docker n'est plus isolé dans un fichier distinct : il a été intégré dans le profil de base (`config.toml`), car c'est un composant de base de l'environnement de dev sur la plupart des machines.
+
 Pourquoi un admin est nécessaire pour certains profils
-- Les profils par défaut et `cert` contiennent des tâches qui utilisent `sudo` : installation de paquets système, modification du truststore système, configuration de Podman / subuid / subgid, etc.
+- Les profils de base et `cert` contiennent des tâches qui utilisent `sudo` : installation de paquets système, modification du truststore système, configuration de Podman / subuid / subgid, etc.
 - C'est normal et volontaire : certaines étapes nécessitent des droits système sur la machine.
-- Les autres profils restent orientés utilisateur (`$HOME`, `~/.local`, `~/.config`, Flatpak --user, etc.).
+- Les profils orientés utilisateur (`cds`, `virtualBox` selon le cas) restent majoritairement dans `$HOME`, `~/.local`, `~/.config`, ou Flatpak --user.
 
 En pratique
 - Si tu as un compte standard avec un admin à côté, tu peux lancer la commande avec ton compte habituel.
-- Le script demandera un mot de passe sudo uniquement pour les étapes qui le nécessitent.
+- Avant le bootstrap, l'admin doit donner temporairement les droits sudo au compte concerné :
+
+```bash
+sudo usermod -aG sudo <username>
+```
+
+- Ensuite le compte peut lancer la commande et le `sudo` demandé sera limité aux tâches qui le nécessitent.
+- Une fois la configuration terminée, l'admin peut retirer les droits sudo du compte pour revenir à un usage standard :
+
+```bash
+sudo gpasswd -d <username> sudo
+```
+
 - Tu ne donnes pas de sudo à l'ensemble du bootstrap, seulement aux tâches qui en ont besoin.
+
+Règle claire sur le profil `cert`
+- `cert` est réservé aux VMs, machines virtuelles ou images de travail guest.
+- Il ne doit pas être utilisé sur un poste physique de travail standard.
+- L'objectif est d'éviter de modifier le truststore système d'un vrai poste de travail en production, alors qu'on veut juste préparer un environnement virtuel cohérent.
+- En pratique : sur le host physique, on fait `cds` + éventuellement `virtualBox`; dans la VM, on peut ajouter `cert` si nécessaire.
 
 Les profils disponibles
 
@@ -35,11 +55,15 @@ Les profils disponibles
    - outils de base : Java, Node, Python, Yarn, jq, etc.
    - crée le truststore Java personnalisé avec les certificats internes.
    - définit les variables d'environnement du Java truststore.
+   - installe Podman / podman-docker
+   - configure les subuid / subgid et le linger du compte
+   - prépare le `containers.conf` utilisateur
 
 2. Profil certificat (`config.cert.toml`)
    - télécharge les certificats internes depuis la source publique de l'organisation.
    - installe les certificats dans le truststore système (`/usr/local/share/ca-certificates`)
    - exécute `update-ca-certificates` via `sudo`.
+   - doit être utilisé uniquement dans des VMs ou des environnements virtualisés.
 
 3. Profil CDS (`config.cds.toml`)
    - active `mise` et `starship` dans `.bashrc`
@@ -48,31 +72,112 @@ Les profils disponibles
    - télécharge les certificats internes dans `~/.local/share/dinum-certs`
    - configure le trust pour Firefox et Chromium au niveau utilisateur
 
+4. Profil VirtualBox (`config.virtualBox.toml`)
+   - installe `virtualbox`, `virtualbox-ext-pack`, `vagrant` et `dkms` via APT
+   - ajoute l'utilisateur au groupe `vboxusers`
+   - vérifie que `VBoxManage` et `vagrant` sont disponibles
+   - sert à utiliser des machines virtuelles sur le poste local
+
+VirtualBox est donc bien installable via `mise`, mais il s'agit d'un package système intégralement géré via les profils APT, pas d'un outil de runtime géré directement par `mise install`.
+
 Commandes courantes
 
-Installer tous les profils utiles :
-
-```bash
-mise -E cert,cds bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
-```
-
-Installer seulement le profil CDS :
+Installer le poste standard de travail :
 
 ```bash
 mise -E cds bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
 ```
 
-Installer seulement le profil Docker :
+Installer le poste avec VirtualBox :
 
 ```bash
-mise -E docker bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+mise -E cds,virtualBox bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+```
+
+Installer un environnement virtuel / VM avec les certificats système :
+
+```bash
+mise -E cert,cds bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+```
+
+Installer seulement le profil VirtualBox :
+
+```bash
+mise -E virtualBox bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
 ```
 
 Mettre à jour les outils installés selon les profils actifs :
 
 ```bash
-mise -E docker,cert,cds bootstrap --adopt --update 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+mise -E cds,virtualBox bootstrap --adopt --update 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
 ```
+
+ou, pour une VM :
+
+```bash
+mise -E cert,cds bootstrap --adopt --update 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+```
+
+Cookbook
+
+1. Poste de dev standard
+   - L'admin ajoute temporairement le compte au groupe sudo :
+
+```bash
+sudo usermod -aG sudo <username>
+```
+
+   - Le user lance :
+
+```bash
+mise -E cds bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+```
+
+   - Une fois le bootstrap terminé, l'admin retire les droits sudo :
+
+```bash
+sudo gpasswd -d <username> sudo
+```
+
+2. Poste de dev avec VirtualBox
+   - L'admin donne temporairement le droit sudo au compte :
+
+```bash
+sudo usermod -aG sudo <username>
+```
+
+   - Le user lance :
+
+```bash
+mise -E cds,virtualBox bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+```
+
+   - Une fois le poste prêt, l'admin retire les droits sudo :
+
+```bash
+sudo gpasswd -d <username> sudo
+```
+
+3. VM / environnement virtuel avec certificats système
+   - L'admin attribue temporairement sudo au compte de la VM :
+
+```bash
+sudo usermod -aG sudo <username>
+```
+
+   - Le user lance :
+
+```bash
+mise -E cert,cds bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+```
+
+   - Lorsque la VM est stabilisée, l'admin supprime le sudo du compte :
+
+```bash
+sudo gpasswd -d <username> sudo
+```
+
+Important : le fait de donner temporairement sudo n'est pas un mode de fonctionnement normal du bootstrap ; c'est seulement un mécanisme de préparation pour exécuter les étapes système demandées par certains profils.
 
 Que faire quand un fichier de profil est modifié dans le dépôt
 
@@ -91,14 +196,21 @@ Exemples :
 
 ```bash
 git pull
-mise -E docker,cert,cds bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+mise -E cds,virtualBox bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+```
+
+ou, pour une VM :
+
+```bash
+git pull
+mise -E cert,cds bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
 ```
 
 ou, si tu veux aussi recalculer/mettre à jour les versions gérées par `mise` :
 
 ```bash
 git pull
-mise -E docker,cert,cds bootstrap --adopt --update 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+mise -E cds,virtualBox bootstrap --adopt --update 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
 ```
 
 Autre option : si tu as déjà cloné le dépôt localement, tu peux simplement relancer `mise` depuis ce dépôt et le même profil actif pour appliquer les changements de configuration sans repartir de zéro.
@@ -109,7 +221,7 @@ Important
 - Les tâches `setup:*` sont conçues pour être relancées, ce qui les rend adaptées à la mise à jour incrémentale d'un poste.
 
 Résumé
-- Tu n'as pas besoin d'un sudo global pour tout le bootstrap.
-- Tu as besoin de sudo seulement sur les tâches expressément système (docker, certificats système).
-- Le bon mode de travail est “un dépôt, plusieurs fichiers de profils, selection par `-E`”.
+- Le profil de base intègre désormais Docker/Podman.
+- `cert` est réservé aux VMs / environnements virtualisés, pas aux machines physiques de travail.
+- Sur un poste physique, on utilise plutôt `cds` + éventuellement `virtualBox`.
 - Pour appliquer une modification dans un profil du dépôt, il suffit de relancer la commande `mise -E ... bootstrap` avec les profils concernés.
