@@ -1,0 +1,34 @@
+[tasks."setup:kubernetes-cli"]
+description = "Installe les outils CLI Kubernetes dans ~/.local/bin"
+run = '''
+set -eu
+
+export PATH="$HOME/.local/bin:$PATH"
+mkdir -p "$HOME/.local/bin"
+
+if ! command -v kubectl >/dev/null 2>&1; then
+  kubectl_version="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
+  curl -fsSL "https://dl.k8s.io/release/${kubectl_version}/bin/linux/amd64/kubectl" -o "$HOME/.local/bin/kubectl"
+  chmod +x "$HOME/.local/bin/kubectl"
+fi
+
+if ! command -v helm >/dev/null 2>&1; then
+  HELM_INSTALL_DIR="$HOME/.local/bin" \
+    curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+fi
+
+if ! command -v kind >/dev/null 2>&1; then
+  curl -fsSL -o "$HOME/.local/bin/kind" "https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64"
+  chmod +x "$HOME/.local/bin/kind"
+fi
+
+kubectl version --client --output=yaml >/dev/null
+helm version --short >/dev/null
+kind version >/dev/null
+
+echo "Kubernetes CLI tools installed in $HOME/.local/bin"
+'''
+
+[tasks.bootstrap]
+description = "Bootstrap Kubernetes tools"
+depends = ["setup:kubernetes-cli"]

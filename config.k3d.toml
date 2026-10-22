@@ -1,0 +1,39 @@
+[tasks."setup:k3d-cli"]
+description = "Installe k3d, kubectl et helm dans ~/.local/bin"
+run = '''
+set -eu
+
+export PATH="$HOME/.local/bin:$PATH"
+mkdir -p "$HOME/.local/bin"
+
+if ! command -v kubectl >/dev/null 2>&1; then
+  kubectl_version="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
+  curl -fsSL "https://dl.k8s.io/release/${kubectl_version}/bin/linux/amd64/kubectl" -o "$HOME/.local/bin/kubectl"
+  chmod +x "$HOME/.local/bin/kubectl"
+fi
+
+if ! command -v helm >/dev/null 2>&1; then
+  HELM_INSTALL_DIR="$HOME/.local/bin" \
+    curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+fi
+
+if ! command -v k3d >/dev/null 2>&1; then
+  curl -fsSL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh \
+    -o "$HOME/.local/bin/install-k3d.sh"
+  chmod +x "$HOME/.local/bin/install-k3d.sh"
+  K3D_INSTALL_DIR="$HOME/.local/bin" \
+    INSTALL_DIR="$HOME/.local/bin" \
+    bash "$HOME/.local/bin/install-k3d.sh"
+  rm -f "$HOME/.local/bin/install-k3d.sh"
+fi
+
+kubectl version --client --output=yaml >/dev/null
+helm version --short >/dev/null
+k3d version >/dev/null
+
+echo "k3d, kubectl et helm installés dans $HOME/.local/bin"
+'''
+
+[tasks.bootstrap]
+description = "Bootstrap local K3D tools"
+depends = ["setup:k3d-cli"]

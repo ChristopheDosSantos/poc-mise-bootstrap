@@ -78,6 +78,16 @@ Les profils disponibles
    - vérifie que `VBoxManage` et `vagrant` sont disponibles
    - sert à utiliser des machines virtuelles sur le poste local
 
+5. Profil Kubernetes (`config.kubernetes.toml`)
+   - installe `kubectl`, `helm` et `kind` dans `~/.local/bin`
+   - ne nécessite pas de sudo
+   - convient à un poste de dev qui travaille avec des clusters Kubernetes locaux (kind, k3d, etc.)
+
+6. Profil k3d (`config.k3d.toml`)
+   - installe `k3d`, `kubectl` et `helm` dans `~/.local/bin`
+   - ne nécessite pas de sudo
+   - est idéal pour créer rapidement un cluster local léger, notamment pour du test/validation Kubernetes sans VM lourde
+
 VirtualBox est donc bien installable via `mise`, mais il s'agit d'un package système intégralement géré via les profils APT, pas d'un outil de runtime géré directement par `mise install`.
 
 Commandes courantes
@@ -106,6 +116,18 @@ Installer seulement le profil VirtualBox :
 mise -E virtualBox bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
 ```
 
+Installer seulement le profil Kubernetes :
+
+```bash
+mise -E kubernetes bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+```
+
+Installer seulement le profil k3d :
+
+```bash
+mise -E k3d bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+```
+
 Mettre à jour les outils installés selon les profils actifs :
 
 ```bash
@@ -116,6 +138,12 @@ ou, pour une VM :
 
 ```bash
 mise -E cert,cds bootstrap --adopt --update 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+```
+
+ou, pour un poste k3d :
+
+```bash
+mise -E k3d bootstrap --adopt --update 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
 ```
 
 Cookbook
@@ -177,6 +205,15 @@ mise -E cert,cds bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-m
 sudo gpasswd -d <username> sudo
 ```
 
+4. Poste de dev avec cluster Kubernetes local (k3d)
+   - Le profil n'exige pas de sudo :
+
+```bash
+mise -E k3d bootstrap --adopt 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+```
+
+   - Cela installe `k3d`, `kubectl` et `helm` dans `~/.local/bin` pour lancer un cluster local sans faire de modifications système.
+
 Important : le fait de donner temporairement sudo n'est pas un mode de fonctionnement normal du bootstrap ; c'est seulement un mécanisme de préparation pour exécuter les étapes système demandées par certains profils.
 
 Que faire quand un fichier de profil est modifié dans le dépôt
@@ -211,6 +248,13 @@ ou, si tu veux aussi recalculer/mettre à jour les versions gérées par `mise` 
 ```bash
 git pull
 mise -E cds,virtualBox bootstrap --adopt --update 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
+```
+
+ou pour un poste k3d :
+
+```bash
+git pull
+mise -E k3d bootstrap --adopt --update 'https://github.com/ChristopheDosSantos/poc-mise-bootstrap.git'
 ```
 
 Autre option : si tu as déjà cloné le dépôt localement, tu peux simplement relancer `mise` depuis ce dépôt et le même profil actif pour appliquer les changements de configuration sans repartir de zéro.
