@@ -4,6 +4,8 @@ go = "latest"
 typst = "latest"
 starship = "latest"
 "http:jetbrains-toolbox" = { version = "3.8.1.88030", url = "https://download.jetbrains.com/toolbox/jetbrains-toolbox-{{version}}.tar.gz", strip_components = 1, bin_path = "bin" }
+"http:vagrant" = { version = "2.4.9", url = "https://releases.hashicorp.com/vagrant/{{version}}/vagrant_{{version}}_linux_amd64.zip" }
+
 
 [bootstrap.packages]
 "apt:fontconfig" = "latest"

@@ -16,7 +16,6 @@ Principe
 - `config.toml` : profil de base, commun à tous.
 - `config.cert.toml` : profil réservé aux environnements virtualisés (VMs / images de travail guest). Il ne doit pas être installé sur une machine physique de travail.
 - `config.cds.toml` : profil de poste de travail (shell, fonts, Flatpak, certificats utilisateur).
-- `config.virtualBox.toml` : profil d'installation de VirtualBox et Vagrant sur le poste physique qui doit exécuter des machines virtuelles.
 - `-E cds,virtualBox` signifie “active les profils `cds` et `virtualBox`”.
 
 Le profil Docker n'est plus isolé dans un fichier distinct : il a été intégré dans le profil de base (`config.toml`), car c'est un composant de base de l'environnement de dev sur la plupart des machines.
@@ -72,18 +71,12 @@ Les profils disponibles
    - télécharge les certificats internes dans `~/.local/share/dinum-certs`
    - configure le trust pour Firefox et Chromium au niveau utilisateur
 
-4. Profil VirtualBox (`config.virtualBox.toml`)
-   - installe `virtualbox`, `virtualbox-ext-pack`, `vagrant` et `dkms` via APT
-   - ajoute l'utilisateur au groupe `vboxusers`
-   - vérifie que `VBoxManage` et `vagrant` sont disponibles
-   - sert à utiliser des machines virtuelles sur le poste local
-
-5. Profil Kubernetes (`config.kubernetes.toml`)
+4. Profil Kubernetes (`config.kubernetes.toml`)
    - installe `kubectl`, `helm` et `kind` dans `~/.local/bin`
    - ne nécessite pas de sudo
    - convient à un poste de dev qui travaille avec des clusters Kubernetes locaux (kind, k3d, etc.)
 
-6. Profil k3d (`config.k3d.toml`)
+5. Profil k3d (`config.k3d.toml`)
    - installe `k3d`, `kubectl` et `helm` dans `~/.local/bin`
    - ne nécessite pas de sudo
    - est idéal pour créer rapidement un cluster local léger, notamment pour du test/validation Kubernetes sans VM lourde
