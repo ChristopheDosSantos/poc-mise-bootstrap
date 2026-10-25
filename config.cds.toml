@@ -151,3 +151,14 @@ done
 
 certutil -d "sql:$db" -L
 '''
+
+[tasks."setup:claude-code"]
+description = "Claude Code (installateur natif officiel)"
+run = '''
+set -eu
+if command -v claude >/dev/null 2>&1; then
+  echo "Claude Code déjà installé : $(claude --version)"
+else
+  curl -fsSL https://claude.ai/install.sh | bash
+fi
+'''
