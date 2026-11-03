@@ -129,25 +129,26 @@ flatpak override --user --filesystem="$certs:ro" org.mozilla.firefox
 '''
 
 [tasks."setup:certs-chromium"]
-description = "Chromium (Flatpak) : importe les certificats internes dans la base NSS"
+description = "Chromium (Flatpak) : approuve les certificats internes via la politique CACertificates"
 depends = ["setup:certs-local"]
 run = '''
 set -eu
-app="org.chromium.Chromium"
 certs="$HOME/.local/share/dinum-certs"
-db="$HOME/.var/app/$app/.pki/nssdb"
+arch="$(flatpak --default-arch)"
+dir="$HOME/.local/share/flatpak/extension/org.chromium.Chromium.Extension.certs-internes/$arch/1/policies/managed"
+mkdir -p "$dir"
 
-# Le bac à sable doit persister ~/.pki, sinon Chromium ne lit pas cette base
-flatpak override --user --persist=.pki "$app"
+{
+  printf '{\n  "CACertificates": ['
+  sep=""
+  for c in "$certs"/*.crt; do
+    b64="$(openssl x509 -in "$c" -outform DER | base64 -w0)"
+    [ -n "$b64" ] || { echo "Échec de conversion : $c" >&2; exit 1; }
+    printf '%s\n    "%s"' "$sep" "$b64"
+    sep=","
+  done
+  printf '\n  ]\n}\n'
+} > "$dir/certs-internes.json"
 
-mkdir -p "$db"
-[ -f "$db/cert9.db" ] || certutil -d "sql:$db" -N --empty-password
-
-for c in "$certs"/*.crt; do
-  n="$(basename "${c%.crt}")"
-  certutil -d "sql:$db" -D -n "$n" 2>/dev/null || true
-  certutil -d "sql:$db" -A -t "C,," -n "$n" -i "$c"
-done
-
-certutil -d "sql:$db" -L
+echo "Politique écrite : $dir/certs-internes.json"
 '''
