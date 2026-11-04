@@ -85,3 +85,53 @@ else
   echo "Session utilisateur absente : lancer 'systemctl --user enable --now podman.socket' dans la session du développeur"
 fi
 '''
+
+[tasks."setup:certs-local"]
+description = "Certificats internes (PEM) dans ~/.local/share/dinum-certs"
+run = '''
+set -eu
+url="https://cert.gouv.nc/certs.json"
+dest="$HOME/.local/share/dinum-certs"
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+curl -fsSL "$url" -o "$tmp/certs.json"
+base="$(jq -r '.base_url' "$tmp/certs.json")"
+
+for f in $(jq -r '.files[]' "$tmp/certs.json"); do
+  curl -fsSL "${base%/}/$f" -o "$tmp/$f.raw"
+  if openssl x509 -in "$tmp/$f.raw" -noout 2>/dev/null; then
+    cp "$tmp/$f.raw" "$tmp/${f%.*}.crt"
+  else
+    openssl x509 -inform DER -in "$tmp/$f.raw" -out "$tmp/${f%.*}.crt"
+  fi
+done
+ls "$tmp"/*.crt >/dev/null
+
+rm -rf "$dest"
+mkdir -p "$dest"
+cp "$tmp"/*.crt "$dest"/
+'''
+
+[tasks."setup:podman-certs"]
+description = "Podman : approuve les certificats internes pour les registres privés (rootless, sans sudo)"
+depends = ["setup:certs-local"]
+run = '''
+set -eu
+certs="$HOME/.local/share/dinum-certs"
+base="${XDG_CONFIG_HOME:-$HOME/.config}/containers/certs.d"
+
+# Registres internes, écrits exactement comme dans les références d'images (host ou host:port)
+registries="docker-registry.ref.gnc"
+
+for reg in $registries; do
+  dir="$base/$reg"
+  mkdir -p "$dir"
+  for c in "$certs"/*.crt; do
+    [ -e "$c" ] || continue
+    cp "$c" "$dir/$(basename "$c")"
+  done
+  echo "Certificats copiés dans $dir"
+done
+'''

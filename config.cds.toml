@@ -82,38 +82,11 @@ else
 fi
 '''
 
-[tasks."setup:certs-local"]
-depends = ["setup:flatpak-apps"]
-description = "Certificats internes (PEM) dans ~/.local/share/dinum-certs"
-run = '''
-set -eu
-url="https://cert.gouv.nc/certs.json"
-dest="$HOME/.local/share/dinum-certs"
 
-tmp="$(mktemp -d)"
-trap 'rm -rf "$tmp"' EXIT
-
-curl -fsSL "$url" -o "$tmp/certs.json"
-base="$(jq -r '.base_url' "$tmp/certs.json")"
-
-for f in $(jq -r '.files[]' "$tmp/certs.json"); do
-  curl -fsSL "${base%/}/$f" -o "$tmp/$f.raw"
-  if openssl x509 -in "$tmp/$f.raw" -noout 2>/dev/null; then
-    cp "$tmp/$f.raw" "$tmp/${f%.*}.crt"
-  else
-    openssl x509 -inform DER -in "$tmp/$f.raw" -out "$tmp/${f%.*}.crt"
-  fi
-done
-ls "$tmp"/*.crt >/dev/null
-
-rm -rf "$dest"
-mkdir -p "$dest"
-cp "$tmp"/*.crt "$dest"/
-'''
 
 [tasks."setup:certs-firefox"]
 description = "Firefox (Flatpak) : installe les certificats internes par politique"
-depends = ["setup:certs-local"]
+depends = ["setup:certs-local", "setup:flatpak-apps"]
 run = '''
 set -eu
 certs="$HOME/.local/share/dinum-certs"
@@ -130,7 +103,7 @@ flatpak override --user --filesystem="$certs:ro" org.mozilla.firefox
 
 [tasks."setup:certs-chromium"]
 description = "Chromium (Flatpak) : approuve les certificats internes via la politique CACertificates"
-depends = ["setup:certs-local"]
+depends = ["setup:certs-local", "setup:flatpak-apps"]
 run = '''
 set -eu
 certs="$HOME/.local/share/dinum-certs"
