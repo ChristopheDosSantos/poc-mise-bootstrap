@@ -78,4 +78,10 @@ log_driver = "k8s-file"
 cgroup_manager = "cgroupfs"
 events_logger = "file"
 EOF
+
+if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+  systemctl --user enable --now podman.socket
+else
+  echo "Session utilisateur absente : lancer 'systemctl --user enable --now podman.socket' dans la session du développeur"
+fi
 '''
